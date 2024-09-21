@@ -1,0 +1,15 @@
+# https://taskfile.dev
+
+version: "3"
+
+vars:
+  REPOSITORY: ghcr.io/adrianliechti/llama-reader
+
+tasks:
+  run:
+    cmds:
+      - docker run -it --rm -p 8000:8000 $(docker build . -q)
+      
+  publish:
+    cmds:
+      - docker buildx build . --push --platform linux/amd64,linux/arm64 --tag {{.REPOSITORY}}:latest

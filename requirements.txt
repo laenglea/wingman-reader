@@ -1,0 +1,4 @@
+fastapi
+markdownify
+playwright
+uvicorn
