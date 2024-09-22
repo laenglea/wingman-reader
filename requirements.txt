@@ -1,4 +1,5 @@
 fastapi
+html2text
 markdownify
 playwright
 uvicorn

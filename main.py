@@ -1,6 +1,8 @@
-from typing import Optional
+import re
 import uvicorn
+import html2text
 
+from typing import Optional
 from pydantic import BaseModel
 from fastapi import FastAPI, HTTPException, Header, Response
 from markdownify import markdownify as md
@@ -42,11 +44,23 @@ async def read(url, format="text"):
             page = await browser.new_page()
             await page.goto(url, wait_until='networkidle')
 
-            match format: 
-                case "text" | "markdown":
+            match format:
+                case "text":
+                    h = html2text.HTML2Text()
+                    h.ignore_links = True
+                    h.ignore_images = True
+                    
                     content = await page.content()
-                    text = md(content)
-                    return Response(content=text, media_type='text/markdown')
+                    content = h.handle(content)
+                    
+                    content = re.sub(r'^\s*\d+\s*$', '', content, flags=re.MULTILINE)
+                    content = re.sub(r'^\s*$', '', content, flags=re.MULTILINE)
+                    
+                    return Response(content=content, media_type='text/markdown')
+                
+                case "markdown":
+                    content = md(await page.content(), heading_style='ATX')
+                    return Response(content=content, media_type='text/markdown')
                  
                 case "html":
                     content = await page.content()
