@@ -56,7 +56,7 @@ async def read(url, format="text"):
                     content = re.sub(r'^\s*\d+\s*$', '', content, flags=re.MULTILINE)
                     content = re.sub(r'^\s*$', '', content, flags=re.MULTILINE)
                     
-                    return Response(content=content, media_type='text/markdown')
+                    return Response(content=content, media_type='text/plain')
                 
                 case "markdown":
                     content = md(await page.content(), heading_style='ATX')
@@ -69,6 +69,14 @@ async def read(url, format="text"):
                 case "pdf":
                     content = await page.pdf()
                     return Response(content=content, media_type='application/pdf')
+                
+                case "screenshot":
+                    data = await page.screenshot()
+                    return Response(content=data, media_type='image/png')
+                
+                case "pageshot":
+                    data = await page.screenshot(full_page=True)
+                    return Response(content=data, media_type='image/png')
                  
                 case _:
                     raise HTTPException(status_code=400, detail="Invalid format")
