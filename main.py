@@ -7,6 +7,8 @@ from pydantic import BaseModel
 from fastapi import FastAPI, HTTPException, Header, Response
 from markdownify import markdownify as md
 from playwright.async_api import async_playwright, Playwright
+from youtube_transcript_api import YouTubeTranscriptApi
+from youtube_transcript_api.formatters import TextFormatter
 
 app = FastAPI(
     title="LLM Platform Reader"
@@ -36,6 +38,20 @@ async def read(request: ReadRequest, x_return_format: Optional[str] = Header(Non
 async def read(url, format="text"):
     if not url.startswith(('http://', 'https://')):
         url = 'https://' + url
+
+    if "youtube.com" in url or "youtu.be" in url:
+        try:
+            if "youtube.com" in url:
+                video_id = url.split('v=')[1]
+            else:
+                video_id = url.split('youtu.be/')[1].split('?')[0]
+
+            transcript = YouTubeTranscriptApi.get_transcript(video_id)
+
+            content = TextFormatter().format_transcript(transcript)
+            return Response(content=content, media_type='text/plain')
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
         
     async with async_playwright() as p:
         browser = await p.chromium.launch()
@@ -82,7 +98,7 @@ async def read(url, format="text"):
                     raise HTTPException(status_code=400, detail="Invalid format")
                  
         except Exception as e:
-                raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail=str(e))
             
 
         finally:
