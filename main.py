@@ -1,3 +1,4 @@
+import os
 import re
 import uvicorn
 import html2text
@@ -5,10 +6,9 @@ import html2text
 from typing import Optional
 from pydantic import BaseModel
 from fastapi import FastAPI, HTTPException, Header, Response
+from urllib.parse import urlparse
 from markdownify import markdownify as md
-from playwright.async_api import async_playwright, Playwright
-from youtube_transcript_api import YouTubeTranscriptApi
-from youtube_transcript_api.formatters import TextFormatter
+from playwright.async_api import async_playwright
 
 app = FastAPI(
     title="LLM Platform Reader"
@@ -38,23 +38,14 @@ async def read(request: ReadRequest, x_return_format: Optional[str] = Header(Non
 async def read(url, format="text"):
     if not url.startswith(('http://', 'https://')):
         url = 'https://' + url
-
-    if "youtube.com" in url or "youtu.be" in url:
-        try:
-            if "youtube.com" in url:
-                video_id = url.split('v=')[1]
-            else:
-                video_id = url.split('youtu.be/')[1].split('?')[0]
-
-            transcript = YouTubeTranscriptApi.get_transcript(video_id)
-
-            content = TextFormatter().format_transcript(transcript)
-            return Response(content=content, media_type='text/plain')
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
         
     async with async_playwright() as p:
-        browser = await p.chromium.launch()
+        launch_args = {}
+
+        if settings := get_proxy_settings():
+            launch_args["proxy"] = settings
+
+        browser = await p.chromium.launch(**launch_args)
 
         try:
             page = await browser.new_page()
@@ -106,3 +97,26 @@ async def read(url, format="text"):
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
+def get_proxy_settings() -> dict:
+    settings: dict = {}
+
+    proxy_url = (
+        os.getenv("https_proxy") or
+        os.getenv("HTTPS_PROXY") or
+        os.getenv("http_proxy") or
+        os.getenv("HTTP_PROXY")
+    )
+
+    if proxy_url:
+        p = urlparse(proxy_url)
+
+        settings["server"] = f"{p.scheme}://{p.hostname}:{p.port}"
+    
+        if p.username:
+            settings["username"] = p.username
+    
+        if p.password:
+            settings["password"] = p.password
+    
+    return settings
