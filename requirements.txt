@@ -3,4 +3,3 @@ html2text
 markdownify
 playwright
 uvicorn
-youtube-transcript-api
