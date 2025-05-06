@@ -71,7 +71,11 @@ async def read(url, format="text"):
         browser = await p.chromium.launch(**launch_args)
 
         try:
-            context = await browser.new_context(ignore_https_errors=True)
+            context = await browser.new_context(
+                ignore_https_errors=True,
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36 Edg/136.0.0.0"
+            )
+            
             page = await context.new_page()
 
             await page.goto(url, wait_until='networkidle')
