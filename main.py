@@ -35,6 +35,29 @@ async def read(request: ReadRequest, x_return_format: Optional[str] = Header(Non
         
     return await read(url, format)
 
+def get_proxy_settings() -> dict:
+    settings: dict = {}
+
+    proxy_url = (
+        os.getenv("https_proxy") or
+        os.getenv("HTTPS_PROXY") or
+        os.getenv("http_proxy") or
+        os.getenv("HTTP_PROXY")
+    )
+
+    if proxy_url:
+        p = urlparse(proxy_url)
+
+        settings["server"] = f"{p.scheme}://{p.hostname}:{p.port}"
+    
+        if p.username:
+            settings["username"] = p.username
+    
+        if p.password:
+            settings["password"] = p.password
+    
+    return settings
+
 async def read(url, format="text"):
     if not url.startswith(('http://', 'https://')):
         url = 'https://' + url
@@ -48,7 +71,13 @@ async def read(url, format="text"):
         browser = await p.chromium.launch(**launch_args)
 
         try:
-            page = await browser.new_page()
+            context = await browser.new_context(
+                ignore_https_errors=True,
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36 Edg/136.0.0.0"
+            )
+            
+            page = await context.new_page()
+
             await page.goto(url, wait_until='networkidle')
 
             match format:
