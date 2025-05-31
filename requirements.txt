@@ -1,5 +1,5 @@
-fastapi
+grpcio
+grpcio-reflection
 html2text
 markdownify
 playwright
-uvicorn
