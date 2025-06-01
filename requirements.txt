@@ -1,5 +1,5 @@
 grpcio
 grpcio-reflection
-playwright
+patchright
 fake-useragent
 markdownify

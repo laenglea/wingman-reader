@@ -9,7 +9,7 @@ from urllib.parse import urlparse
 from fake_useragent import UserAgent
 
 from markdownify import markdownify as md
-from playwright.async_api import async_playwright
+from patchright.async_api import async_playwright
 
 import extractor_pb2
 import extractor_pb2_grpc
