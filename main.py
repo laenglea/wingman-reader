@@ -1,14 +1,43 @@
+import os
 import grpc
 import asyncio
 
 from concurrent import futures
 from grpc_reflection.v1alpha import reflection
 
+from urllib.parse import urlparse
+from fake_useragent import UserAgent
+
 from markdownify import markdownify as md
 from playwright.async_api import async_playwright
 
 import extractor_pb2
 import extractor_pb2_grpc
+
+ua = UserAgent(browsers=['Edge', 'Chrome'], platforms=['Windows'])
+
+def get_proxy_settings() -> dict:
+    settings: dict = {}
+
+    proxy_url = (
+        os.getenv("https_proxy") or
+        os.getenv("HTTPS_PROXY") or
+        os.getenv("http_proxy") or
+        os.getenv("HTTP_PROXY")
+    )
+
+    if proxy_url:
+        p = urlparse(proxy_url)
+
+        settings["server"] = f"{p.scheme}://{p.hostname}:{p.port}"
+    
+        if p.username:
+            settings["username"] = p.username
+    
+        if p.password:
+            settings["password"] = p.password
+    
+    return settings
 
 class ExtractorServicer(extractor_pb2_grpc.ExtractorServicer):
     async def Extract(self, request: extractor_pb2.ExtractRequest, context: grpc.aio.ServicerContext):
@@ -27,12 +56,15 @@ class ExtractorServicer(extractor_pb2_grpc.ExtractorServicer):
         
         async with async_playwright() as p:
             launch_args = {}
+
+            if settings := get_proxy_settings():
+                launch_args["proxy"] = settings
             
             browser = await p.chromium.launch(**launch_args)
             
             browser_context = await browser.new_context(
                 ignore_https_errors=True,
-                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36 Edg/136.0.0.0",
+                user_agent=ua.random,
                 viewport={'width': 1280, 'height': 720},
                 reduced_motion='reduce',
             )
@@ -118,19 +150,6 @@ class ExtractorServicer(extractor_pb2_grpc.ExtractorServicer):
 
             match format:
                 case extractor_pb2.FORMAT_TEXT:
-                    # h = html2text.HTML2Text()
-                    # h.ignore_links = True
-                    # h.ignore_images = True
-                    
-                    # content = await page.content()
-                    # content = h.handle(content)
-                    
-                    # content = re.sub(r'^\s*\d+\s*$', '', content, flags=re.MULTILINE)
-                    # content = re.sub(r'^\s*$', '', content, flags=re.MULTILINE)
-
-                    # data = bytes(content, 'utf-8')
-                    # return extractor_pb2.File(content=data, content_type='text/plain')
-
                     content = await page.content()
 
                     markdown = md(

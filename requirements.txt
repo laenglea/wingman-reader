@@ -1,4 +1,5 @@
 grpcio
 grpcio-reflection
 playwright
+fake-useragent
 markdownify
