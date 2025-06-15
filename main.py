@@ -1,6 +1,6 @@
 import os
 import grpc
-import asyncio
+import grpc.aio
 
 from concurrent import futures
 from grpc_reflection.v1alpha import reflection
@@ -190,7 +190,7 @@ class ExtractorServicer(extractor_pb2_grpc.ExtractorServicer):
                     data = await page.pdf()
                     return extractor_pb2.File(content=data, content_type='application/pdf')
 
-async def serve():
+def serve():
     max_message_size = 100 * 1024 * 1024
 
     options = [
@@ -198,7 +198,7 @@ async def serve():
         ('grpc.max_send_message_length', max_message_size),
     ]
 
-    server = grpc.aio.server(
+    server = grpc.server(
         futures.ThreadPoolExecutor(max_workers=10),
         options=options
     )
@@ -214,10 +214,10 @@ async def serve():
     reflection.enable_server_reflection(SERVICE_NAMES, server)
 
     server.add_insecure_port('[::]:50051')
-    await server.start()
+    server.start()
 
     print("Wingman Reader started. Listening on port 50051.")
-    await server.wait_for_termination()
+    server.wait_for_termination()
 
 if __name__ == '__main__':
-    asyncio.run(serve())
+    serve()
