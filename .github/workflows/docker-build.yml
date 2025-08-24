@@ -40,7 +40,7 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/wingman-platform:${{ github.sha }}
-            ghcr.io/${{ github.repository_owner }}/wingman-platform:latest
-          cache-from: type=registry,ref=ghcr.io/${{ github.repository_owner }}/wingman-platform:cache
+            ghcr.io/${{ github.repository_owner }}/${{ github.repository_name }}:${{ github.sha }}
+            ghcr.io/${{ github.repository_owner }}/${{ github.repository_name }}:latest
+          cache-from: type=registry,ref=ghcr.io/${{ github.repository_owner }}/${{ github.repository_name }}:cache
           cache-to: type=inline
